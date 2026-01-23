@@ -99,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: userName,
         });
         showToast("Đăng nhập thành công!", "success");
+        // Redirect will be handled by login page if there's returnUrl
+        // Otherwise redirect to home
         router.push("/");
       }
     } catch (error: any) {

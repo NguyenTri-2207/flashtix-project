@@ -7,13 +7,24 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getEventById } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth/auth-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BookingSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const bookingRef = searchParams.get("ref");
   const eventId = searchParams.get("eventId");
   const [eventName, setEventName] = useState<string>("");
+
+  // Protect route - redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      const returnUrl = encodeURIComponent("/booking-success" + (bookingRef ? `?ref=${bookingRef}&eventId=${eventId || ""}` : ""));
+      router.push(`/login?returnUrl=${returnUrl}`);
+    }
+  }, [isAuthenticated, isAuthLoading, router, bookingRef, eventId]);
 
   useEffect(() => {
     if (eventId) {
@@ -23,6 +34,24 @@ export default function BookingSuccessPage() {
       }
     }
   }, [eventId]);
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="w-full max-w-md">
+          <Skeleton className="mb-4 h-12 w-full" />
+          <Skeleton className="mb-4 h-32 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (!bookingRef) {
     return (

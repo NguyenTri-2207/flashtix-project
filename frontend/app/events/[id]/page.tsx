@@ -12,6 +12,7 @@ import { BookingButton } from "@/components/features/booking-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAuth } from "@/lib/auth/auth-context";
 
 // Simulate API call với retry logic
 async function fetchEventWithRetry(
@@ -46,6 +47,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [buttonState, setButtonState] = useState<ButtonState>("wait");
@@ -98,6 +100,15 @@ export default function EventDetailPage() {
 
   const handleBooking = async () => {
     if (!event) return;
+
+    // Check authentication first
+    if (!isAuthenticated) {
+      showToast("Vui lòng đăng nhập để mua vé", "error");
+      // Redirect to login with return URL
+      const returnUrl = encodeURIComponent(`/events/${event.id}`);
+      router.push(`/login?returnUrl=${returnUrl}`);
+      return;
+    }
 
     setButtonState("processing");
 
@@ -243,6 +254,13 @@ export default function EventDetailPage() {
                     </p>
                   </div>
 
+                  {!isAuthLoading && !isAuthenticated && (
+                    <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        ⚠️ Bạn cần đăng nhập để mua vé
+                      </p>
+                    </div>
+                  )}
                   <BookingButton
                     state={buttonState}
                     saleStartTime={

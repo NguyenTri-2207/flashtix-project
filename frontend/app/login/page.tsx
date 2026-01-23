@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Music, Mail, Lock, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      if (returnUrl) {
+        router.push(decodeURIComponent(returnUrl));
+      } else {
+        router.push("/");
+      }
+    }
+  }, [isAuthenticated, isLoading, returnUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +35,13 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
+      // After successful login, redirect will be handled by auth context
+      // But we can also handle returnUrl here if needed
+      if (returnUrl) {
+        setTimeout(() => {
+          router.push(decodeURIComponent(returnUrl));
+        }, 100);
+      }
     } catch (error) {
       // Error đã được xử lý trong auth context
     } finally {
@@ -67,6 +87,11 @@ export default function LoginPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 Đăng nhập để săn vé The Eras Tour
               </p>
+              {returnUrl && (
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  Sau khi đăng nhập, bạn sẽ được chuyển về trang trước đó
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
