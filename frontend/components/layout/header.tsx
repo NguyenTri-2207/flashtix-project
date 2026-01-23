@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Music } from "lucide-react";
+import { UserMenu } from "./user-menu";
 
 export function Header() {
   return (
@@ -18,13 +21,14 @@ export function Header() {
             </span>
           </div>
         </Link>
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="flex items-center gap-6">
           <Link
             href="/"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="hidden text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 md:block"
           >
             Shows
           </Link>
+          <UserMenu />
         </nav>
       </div>
     </header>
