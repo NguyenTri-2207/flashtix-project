@@ -1,6 +1,6 @@
 import express from "express";
 import { body, validationResult } from "express-validator";
-import { createBooking } from "../services/bookingService.js";
+import { createBooking, getAllBookings } from "../services/bookingService.js";
 import { extractUserId } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -53,6 +53,19 @@ router.post(
     }
   }
 );
+
+/**
+ * GET /api/v1/bookings
+ * Get all bookings (admin function)
+ */
+router.get("/", async (req, res, next) => {
+  try {
+    const bookings = await getAllBookings();
+    res.json(bookings);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
 

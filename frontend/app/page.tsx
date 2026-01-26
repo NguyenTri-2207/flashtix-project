@@ -1,12 +1,47 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { EventCard } from "@/components/features/event-card";
-import { mockEvents, artistInfo } from "@/lib/mockData";
+import { artistInfo } from "@/lib/mockData";
 import { Sparkles, Zap, Music, Star } from "lucide-react";
 import Link from "next/link";
+import { apiClient } from "@/lib/api/client";
+import { mapBackendEventsToEvents } from "@/lib/api/eventMapper";
+import { Event } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast-provider";
 
 export default function HomePage() {
-  const onSaleEvents = mockEvents.filter((event) => event.status === "on_sale");
-  const upcomingEvents = mockEvents.filter((event) => event.status === "upcoming");
+  const { showToast } = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const backendEvents = await apiClient.getEvents();
+        const mappedEvents = mapBackendEventsToEvents(backendEvents);
+        setEvents(mappedEvents);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Không thể tải danh sách sự kiện";
+        setError(errorMessage);
+        showToast(errorMessage, "error");
+        console.error("Error loading events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [showToast]);
+
+  const onSaleEvents = events.filter((event) => event.status === "on_sale");
+  const upcomingEvents = events.filter((event) => event.status === "upcoming");
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
@@ -81,8 +116,35 @@ export default function HomePage() {
 
       {/* Events Section */}
       <section id="events" className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        {/* On Sale Events */}
-        {onSaleEvents.length > 0 && (
+        {loading && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="text-center">
+            <p className="mb-4 text-lg text-red-600 dark:text-red-400">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-red-600 px-6 py-3 text-white hover:bg-red-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* On Sale Events */}
+            {onSaleEvents.length > 0 && (
           <div className="mb-16">
             <div className="mb-8 flex items-center justify-between">
               <div>
@@ -121,6 +183,16 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+            )}
+
+            {!loading && !error && onSaleEvents.length === 0 && upcomingEvents.length === 0 && (
+              <div className="text-center py-16">
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                  Chưa có sự kiện nào. Vui lòng quay lại sau.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

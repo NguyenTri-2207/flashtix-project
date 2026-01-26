@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Calendar, MapPin, Clock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { getEventById } from "@/lib/mockData";
 import { Event, ButtonState } from "@/types";
 import { LiveStockCounter } from "@/components/features/live-stock-counter";
 import { BookingButton } from "@/components/features/booking-button";
@@ -13,8 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-provider";
 import { useAuth } from "@/lib/auth/auth-context";
+import { apiClient } from "@/lib/api/client";
+import { mapBackendEventToEvent } from "@/lib/api/eventMapper";
 
-// Simulate API call với retry logic
+// Fetch event with retry logic
 async function fetchEventWithRetry(
   id: string,
   retries = 3,
@@ -22,19 +23,11 @@ async function fetchEventWithRetry(
 ): Promise<Event> {
   for (let i = 0; i < retries; i++) {
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Simulate random server errors (30% chance)
-      if (Math.random() < 0.3 && i < retries - 1) {
-        throw new Error("Server đang bận");
-      }
-
-      const event = getEventById(id);
-      if (!event) {
+      const backendEvent = await apiClient.getEventById(id);
+      if (!backendEvent) {
         throw new Error("Không tìm thấy sự kiện");
       }
-      return event;
+      return mapBackendEventToEvent(backendEvent);
     } catch (error) {
       if (i === retries - 1) throw error;
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -113,13 +106,11 @@ export default function EventDetailPage() {
     setButtonState("processing");
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Simulate random success/failure (80% success rate)
-      if (Math.random() < 0.8) {
-        const bookingRef = `BK${Date.now()}`;
-        router.push(`/booking-success?ref=${bookingRef}&eventId=${event.id}`);
+      const result = await apiClient.createBooking(event.id);
+      if (result.success && result.booking) {
+        router.push(
+          `/booking-success?ref=${result.booking.bookingReference}&eventId=${event.id}`
+        );
       } else {
         throw new Error("Không thể đặt vé, vui lòng thử lại");
       }

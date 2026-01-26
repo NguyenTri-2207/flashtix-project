@@ -6,9 +6,10 @@ import { CheckCircle2, Home, Ticket } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getEventById } from "@/lib/mockData";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/lib/api/client";
+import { mapBackendEventToEvent } from "@/lib/api/eventMapper";
 
 export default function BookingSuccessPage() {
   const searchParams = useSearchParams();
@@ -27,12 +28,20 @@ export default function BookingSuccessPage() {
   }, [isAuthenticated, isAuthLoading, router, bookingRef, eventId]);
 
   useEffect(() => {
-    if (eventId) {
-      const event = getEventById(eventId);
-      if (event) {
-        setEventName(event.name);
+    const loadEvent = async () => {
+      if (eventId) {
+        try {
+          const backendEvent = await apiClient.getEventById(eventId);
+          if (backendEvent) {
+            const event = mapBackendEventToEvent(backendEvent);
+            setEventName(event.name);
+          }
+        } catch (error) {
+          console.error("Error loading event:", error);
+        }
       }
-    }
+    };
+    loadEvent();
   }, [eventId]);
 
   // Show loading while checking auth

@@ -77,11 +77,37 @@ class ApiClient {
 
   // Events
   async getEvents() {
-    return this.request<any[]>("/events");
+    return this.request<Array<{
+      eventId: string;
+      name: string;
+      thumbnail: string;
+      date: string;
+      time: string;
+      location: string;
+      description: string;
+      status: "upcoming" | "on_sale" | "sold_out";
+      totalTickets: number;
+      availableTickets: number;
+      price: number;
+      saleStartTime?: string | null;
+    }>>("/events");
   }
 
   async getEventById(id: string) {
-    return this.request<any>(`/events/${id}`);
+    return this.request<{
+      eventId: string;
+      name: string;
+      thumbnail: string;
+      date: string;
+      time: string;
+      location: string;
+      description: string;
+      status: "upcoming" | "on_sale" | "sold_out";
+      totalTickets: number;
+      availableTickets: number;
+      price: number;
+      saleStartTime?: string | null;
+    }>(`/events/${id}`);
   }
 
   async createEvent(eventData: {
@@ -107,6 +133,37 @@ class ApiClient {
     });
   }
 
+  async updateEvent(id: string, eventData: Partial<{
+    name: string;
+    thumbnail: string;
+    date: string;
+    time: string;
+    location: string;
+    description: string;
+    status: "upcoming" | "on_sale" | "sold_out";
+    totalTickets: number;
+    availableTickets: number;
+    price: number;
+    saleStartTime?: string;
+  }>) {
+    return this.request<{
+      success: boolean;
+      event: any;
+    }>(`/events/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(eventData),
+    });
+  }
+
+  async deleteEvent(id: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/events/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // Bookings
   async createBooking(eventId: string) {
     return this.request<{
@@ -122,6 +179,15 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ eventId }),
     });
+  }
+
+  async getBookings() {
+    return this.request<Array<{
+      bookingId: string;
+      eventId: string;
+      userId: string;
+      createdAt: string;
+    }>>("/bookings");
   }
 
   // Admin

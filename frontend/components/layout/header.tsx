@@ -29,10 +29,10 @@ export function Header() {
             Shows
           </Link>
           <Link
-            href="/admin"
+            href="/dashboard"
             className="hidden text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 md:block"
           >
-            Admin
+            Dashboard
           </Link>
           <UserMenu />
         </nav>
