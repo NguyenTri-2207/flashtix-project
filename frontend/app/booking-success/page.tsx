@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { CheckCircle2, Home, Ticket } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api/client";
 import { mapBackendEventToEvent } from "@/lib/api/eventMapper";
 
-export default function BookingSuccessPage() {
+function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -138,6 +138,25 @@ export default function BookingSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap component with Suspense to fix useSearchParams() warning
+export default function BookingSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="w-full max-w-md">
+            <Skeleton className="mb-4 h-12 w-full" />
+            <Skeleton className="mb-4 h-32 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      }
+    >
+      <BookingSuccessContent />
+    </Suspense>
   );
 }
 
