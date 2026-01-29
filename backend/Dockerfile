@@ -1,57 +1,56 @@
 # ============================================
-# Stage 1: Dependencies (Pruning)
+# Stage 1: Dependencies (Cài đặt thư viện)
 # ============================================
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-# Sometimes needed for specific libraries, but for standard Express/AWS SDK it's optional.
-# RUN apk add --no-cache libc6-compat
+# Cài đặt libc6-compat nếu dùng thư viện xử lý ảnh hoặc native modules (Optional nhưng nên có)
+RUN apk add --no-cache libc6-compat
 
+# Copy file định nghĩa thư viện trước để tận dụng Docker Cache
 COPY package.json yarn.lock ./
 
-# TỐI ƯU HÓA: Chỉ cài dependencies cần thiết cho Production
-# Giúp giảm dung lượng Image từ ~500MB xuống còn ~100MB
+# Chỉ cài dependencies cho Production (Bỏ qua devDependencies)
+# Giúp giảm dung lượng image đáng kể
 RUN yarn install --production --frozen-lockfile
 
 # ============================================
-# Stage 2: Runner
+# Stage 2: Runner (Môi trường chạy thật)
 # ============================================
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Set production environment
+# Thiết lập môi trường Production
 ENV NODE_ENV=production
 
-# Security: Don't run as root
-# 'node' user exists by default in alpine image with uid 1000
-# We don't need to create it again
+# 💡 PRO TIP: Cài đặt "dumb-init"
+# Node.js mặc định không xử lý tốt tín hiệu "SIGTERM" từ AWS ECS khi tắt task.
+# dumb-init giúp container tắt nhẹ nhàng (Graceful Shutdown), không bị lỗi zombie process.
+RUN apk add --no-cache dumb-init wget
 
-# Copy package files (Good practice for debugging version)
-COPY package.json yarn.lock ./
+# Tạo user/group (Thực ra node:20-alpine đã có sẵn user 'node', dòng này để đảm bảo UID/GID chuẩn)
+# Nhưng để đơn giản ta dùng user 'node' có sẵn.
 
-# Copy ONLY production node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy node_modules từ Stage 1 sang
+# Quan trọng: Phải set quyền sở hữu (--chown) cho user 'node' ngay lúc copy
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 
-# Copy source code
-# Quan trọng: Set quyền sở hữu file cho user 'node' ngay lập tức
+# Copy source code backend
 COPY --chown=node:node src ./src
-# Nếu bạn có các file config khác ở root (vd: .env.example), hãy copy cụ thể, tránh copy rác
-# COPY --chown=node:node .env.example ./
+COPY --chown=node:node package.json ./
 
-# Switch user to non-root
+# Chuyển sang user thường (Non-root) để bảo mật
 USER node
 
-# Expose port
+# Mở cổng 5000
 EXPOSE 5000
 
-# Health Check (Chuẩn cho AWS ALB & ECS)
-# ALB sẽ ping vào đây, nếu fail nó sẽ restart container
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# 🏥 Health Check (Cực quan trọng cho ALB)
+# ALB sẽ ping vào đây. Nếu thất bại 3 lần, nó sẽ tự kill container và tạo cái mới.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/v1/health || exit 1
 
-# Start Server
-# Entry point is src/index.js (not src/server.js)
-CMD ["node", "src/index.js"]
+# Khởi chạy server thông qua dumb-init
+CMD ["dumb-init", "node", "src/index.js"]

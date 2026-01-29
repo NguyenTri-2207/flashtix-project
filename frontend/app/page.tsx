@@ -24,6 +24,7 @@ export default function HomePage() {
         setLoading(true);
         setError(null);
         const backendEvents = await apiClient.getEvents();
+        console.log(backendEvents);
         const mappedEvents = mapBackendEventsToEvents(backendEvents);
         setEvents(mappedEvents);
       } catch (err) {
@@ -105,7 +106,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 pt-4">
                   <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Hơn 200 triệu album đã bán ra trên toàn thế giới
+                    Hơn 200 triệu album đã bán ra trên toàn thế giới 1
                   </span>
                 </div>
               </div>

@@ -55,7 +55,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 FlashTix Backend API running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🌍 AWS Region: ${process.env.AWS_REGION || "ap-southeast-1"}`);
