@@ -12,7 +12,7 @@ env:
   AWS_REGION: ap-southeast-1
   ECR_REPOSITORY_FRONTEND: flashtix-frontend
   ECS_CLUSTER: flashtix-cluster-01
-  ECS_SERVICE_FRONTEND: flashtix-frontend-service
+  ECS_SERVICE_FRONTEND: flashtix-frontend-task
 
 jobs:
   deploy-frontend:
